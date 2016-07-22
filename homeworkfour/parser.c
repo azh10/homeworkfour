@@ -12,7 +12,7 @@
 #define MAX_SYMTABLE_SIZE 100
 
 
-// 
+// this is the enum and structs for the instruction opcodes
 enum {
 	LIT = 1, OPR, LOD, STO, CAL,
 	INC, JMP, JPC, SIO
