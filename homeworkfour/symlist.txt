@@ -1,0 +1,3 @@
+Name	Type	Level	Value
+x	var	0	-1
+y	var	0	-1
