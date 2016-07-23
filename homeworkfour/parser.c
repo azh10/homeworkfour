@@ -166,9 +166,7 @@ int lookup( symbol s ){
         if( !strcmp(s.name, symbol_table[temp++].name) ){
             return symbol_table[temp - 1].kind;
         }
-
     }
-
 	return 0;
 }
 
@@ -181,6 +179,19 @@ int find( symbol s ){
 		if( !strcmp(s.name, symbol_table[--temp].name) ) return temp;
 	}
 	return -1;
+}
+
+// return the type of the symbol (cons, var, proc)
+int symboltype( int position ){
+	return symbol_table[position].kind;
+}
+// return the level of the symbol
+int symboltype( int position ){
+	return symbol_table[position].level;
+}
+// return the address of the symbol
+int symboltype( int position ){
+	return symbol_table[position].address;
 }
 
 // functional prototypes because some of them depend on each other
@@ -304,7 +315,6 @@ int constdec(){
 	getToken();
 	return 1;
 }
-
 /* checks variable declaration syntax:
  *  - 1 "varsym" token (already found before function call)
  *  - 1 "identsym" token (or more seperated by commas)
@@ -349,7 +359,6 @@ int vardec(){
 	getToken();
 	return 1;
 }
-
 /* checks procedure declaration syntax:
  *  - 1 "procsym" token (already found before function call)
  *  - 1 "identsym" token
@@ -440,10 +449,10 @@ int statement(){
 		strcpy(s.name, buffer);
 		
 		lookUp = lookup(s);
-		int location = find(s);
-		if( location == -1 ) return error(11);  //Undeclared identifier
+		int i = find(s);
+		if( i == -1 ) return error(11);  //Undeclared identifier
 		
-		if( symbol_table[location].kind != VAR ) return error(12); //not a var
+		if( symboltype(i) != VAR ) return error(12); //not a var
 /*
 		switch(lookUp){
 			case 0:
@@ -467,7 +476,7 @@ int statement(){
 		getToken();
 		if( !expression() ) return 0;
 		
-		gen( STO, symbol_table[location].level, symbol_table[location].addr );
+		gen( STO, symbollevel(i), symboladdress(i) );
 
 
 	// test for first pattern piece "callsym"
@@ -671,30 +680,18 @@ int term(){
  */
 int factor(){
 
-
-
-
 	// test for first patterm piece "identsym"
 	if( currentToken == identsym ){
 		getToken();
 		strcpy(s.name, buffer);
         int lookUp = lookup(s);
-
-        switch(lookUp){
-
-            case 0:
-                error(11);      //Undeclared identifier.
-                break;
-            case 1:
-                //What to do when it's a const
-                break;
-            case 2:
-                //What to do when it's a var
-                break;
-            case 3:
-                error(21);      //Assignment is a procedure.
-
-           }
+        
+        int i = find(s);
+        if( i == -1 ) error(11);        // undeclared
+        else if( i == 3 ) error(21);    // procedure
+        if( symboltype(i) == VAR ) gen( LOD, symbollevel(i), symboladdress(i) );
+        else if( symboltype(i) == CONST ) gen( LIT, 0, symbolval(i) );
+        else error(23);                 // bad factor
 
 	// test for first pattern piece "number"
 	}else if( currentToken == numbersym ){
