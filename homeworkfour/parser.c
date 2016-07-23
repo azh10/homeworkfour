@@ -181,6 +181,8 @@ int find( symbol s ){
 	return -1;
 }
 
+
+
 // return the type of the symbol (cons, var, proc)
 int symboltype( int position ){
 	return symbol_table[position].kind;
@@ -227,10 +229,11 @@ int program(){
  *  - 1 procedure declaration (or none)
  *  - 1 statement             (or none)
  */
-int block(){
+int block(){               
 
+	int prevSymCount = symCounter;
 	int space = 4;
-//	int jmpaddr = gen(JMP, 0, 0);
+	int jmpaddr = gen(JMP, 0, 0);
 
 	if( currentToken == constsym ){
 		// the token is a constant symbol, test this declaration
@@ -239,7 +242,8 @@ int block(){
 
 	if( currentToken == varsym ){
 		// the token is a variable symbol, test this declaration
-		if( !vardec() ) return 0;
+		space += vardec();
+		if( space == 4 ) return 0; // an error was found, return
 	}
 
 	if( currentToken == procsym ){
@@ -248,10 +252,13 @@ int block(){
 	}
 
 //	code[jmpaddr].addr = NEXT_CODE_ADDR;
-//	gen(INC, 0, space);
+	gen(INC, 0, space);
 
 	// now test the statement at the end of the block
 	statement();
+	
+	gen( OPR, 0, 0 );
+	symCounter = prevSymCount;
 }
 /* checks constant declaration syntax:
  *  - 1 "constsym" token (already found before function call)
@@ -322,6 +329,7 @@ int constdec(){
  */
 int vardec(){
 
+	int numberOfVars = 0;
 	// set the temp symbol to have VAR kind value and clear fields
 	//   the fields will be refilled in as the information is parsed
 	s.kind = VAR;
@@ -347,17 +355,14 @@ int vardec(){
 
 		// get the next token to decide if the declaration statement continues
 		getToken();
-
+		
+		numberOfVars++;
 	}while( currentToken == commasym ); // seperated by commas
-
-	if(currentToken == identsym){
-        error(5);       //semicolon between statements
-	}
 
 	if( currentToken != semicolonsym ) return error(5); // expected ; error
 
 	getToken();
-	return 1;
+	return numberOfVars;
 }
 /* checks procedure declaration syntax:
  *  - 1 "procsym" token (already found before function call)
@@ -491,8 +496,14 @@ int statement(){
 
 		strcpy(s.name, buffer);
 		lookUp = lookup(s);
+		
+		int i = find(s);
+		if( i == -1 ) return error(11);  //Undeclared identifier
+		
+		if( symboltype(i) == PROC ) gen( CAL, symbollevel(i), symboladdr(i) );
+		else return error(14);
 
-		switch(lookUp){
+/*		switch(lookUp){
             case 0:
                 error(11);      //Undeclared identifier.
                 break;
@@ -505,6 +516,7 @@ int statement(){
             case 3:
                 break;
        }
+ */
 
        getToken();
 
