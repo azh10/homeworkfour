@@ -26,7 +26,7 @@ typedef struct ins{
 int codeLine = 0;
 ins code[MAX_CODE_LENGTH];
 int space = 0;
-int op;
+int op, currentM, prevSym,jumpBack;
 
 // enum with token values for the lexemes
 enum {
@@ -124,17 +124,8 @@ void gen( int op, int lex, int mcode ){
         exit(EXIT_FAILURE);
     }
 
-	// all of these cases l = 0
-	switch( op ){
-		case SIO: // sio has three cases find which case it is
-			op += mcode -1;
-			//printf("went here");
-		case LIT: case OPR: case INC: case JMP:
-			lex = 0;
-		default: break;
-	}
-
-	// make the instruction with its code and add to code array
+    printf("op: %d, lex: %d, m: %d\n", op, lex, mcode);
+    // make the instruction with its code and add to code array
 	ins instruction = { op, lex, mcode };
 	code[codeLine++] = instruction;
 }
@@ -219,7 +210,7 @@ int program(){
 		if( currentToken != periodsym )
             return error(9);
 		else
-            printf( "No errors, program is syntactically correct.\n" );
+            printf( "No errors, program is syntactically correct." );
     }
 	return 1;
 }
@@ -232,11 +223,14 @@ int program(){
  */
 int block(){
 
+
 	int jmpAddr = codeLine;
+	int tempPos;
+	currentM = 0;
 	space = 4;
 	gen(JMP,0,0);
 
-
+    do{
 	if( currentToken == constsym ){
 		// the token is a constant symbol, test this declaration
 		if( !constdec() ) return 0;
@@ -246,15 +240,20 @@ int block(){
 		// the token is a variable symbol, test this declaration
 		if( !vardec() ) return 0;
 	}
+	}while(currentToken == constsym || currentToken == varsym);
 
-	if( currentToken == procsym ){
+	tempPos = currentM;
+
+	while( currentToken == procsym ){
 		// the token is a procedure symbol, test this declaration
 		if( !procdec() ) return 0;
 	}
 
+
+
 	code[jmpAddr].m = codeLine;
 
-	gen(INC, 0, space);
+	gen(INC, 0, tempPos + 4);
 
 	// now test the statement at the end of the block
 	statement();
@@ -264,13 +263,15 @@ int block(){
         return 1;
 	}
 	else if(currentToken == periodsym){
-        gen(SIO, 0, 3);
+        gen(11, 0, 3);
         return 1;
 	}
 	else{
-        error(6);
-        return 0;
+       return error(6);
 	}
+
+
+
 
 	return 1;
 }
@@ -364,12 +365,12 @@ int vardec(){
 		getToken();
 		strcpy( s.name, buffer );
 		s.level = currLevel;
-		s.addr = space;
+		s.addr = currentM+4;
 
 
 		// we reached the end of one variable declaration (try to) add to table
 		addTo( s );
-		space++;
+		currentM++;
 
 		// get the next token to decide if the declaration statement continues
 		getToken();
@@ -400,58 +401,60 @@ int procdec(){
 	s.kind = PROC;
 	s.val = s.level = s.addr = 0;
 
-	// loop till "ident semicolon block semicolon" pattern is found
-	//   note: procedures can follow each other and will restart the pattern search
-	do{
-
-		// get token and test for first pattern piece "identsym"
-		getToken();
-		if( currentToken != identsym ) return error(4);     // no ident error
-
-		// an identifier was found the next token is its name
-		getToken();
-		strcpy( s.name, buffer );
-
-		// get token and test for second pattern piece "semicolonsym"
-		getToken();
-		if( currentToken != semicolonsym ) return error(5); // expect ; error
-
-		// we move inside a procedure and down a level
-		s.level = currLevel++;
-		s.addr = codeLine;
+	printf("PROCEDURE!! YUUSSS\n\n");
 
 
-		// add to table
-		addTo( s );
 
-		// get token and test this block
-		getToken();
+    // get token and test for first pattern piece "identsym"
+    getToken();
+    if( currentToken != identsym ) return error(4);     // no ident error
 
-		// checking if the next token is the right symbol
-		if(
-            currentToken != constsym &&
-            currentToken != varsym &&
-            currentToken != procsym &&
-            currentToken != identsym &&
-            currentToken != callsym &&
-            currentToken != beginsym &&
-            currentToken != ifsym &&
-            currentToken != whilesym &&
-            currentToken != readsym &&
-            currentToken != writesym)
-            return error(6);   //wrong symbol after procedure declaration error
+    // an identifier was found the next token is its name
+    getToken();
+    strcpy( s.name, buffer );
 
-		if( !block() ) return 0;
 
-		// the procedure must end with a semicolon
-		if( currentToken != semicolonsym ) return error(5); // expect ; error
+    // get token and test for second pattern piece "semicolonsym"
+    getToken();
+    if( currentToken != semicolonsym ) return error(5); // expect ; error
 
-		// we finished parsing in the procedure move back up a level
-		currLevel--;
+    // we move inside a procedure and down a level
+    s.level = currLevel;
+    s.addr = codeLine;
 
-		// get token decided if there is another procedure to be declared
-		getToken();
-	}while( currentToken == procsym );
+
+    // add to table
+    addTo( s );
+
+    // get token and test this block
+    getToken();
+
+    // checking if the next token is the right symbol
+    if(
+        currentToken != constsym &&
+        currentToken != varsym &&
+        currentToken != procsym &&
+        currentToken != identsym &&
+        currentToken != callsym &&
+        currentToken != beginsym &&
+        currentToken != ifsym &&
+        currentToken != whilesym &&
+        currentToken != readsym &&
+        currentToken != writesym)
+        return error(6);   //wrong symbol after procedure declaration error
+
+    currLevel++;
+    if( !block() ) return 0;
+
+    // the procedure must end with a semicolon
+    if( currentToken != semicolonsym ) return error(5); // expect ; error
+
+    //we finished parsing in the procedure move back up a level
+    currLevel--;
+
+    // get token decided if there is another procedure to be declared
+    getToken();
+
 
 	return 1;
 }
@@ -566,6 +569,8 @@ int statement(){
             return error(17);       // no end error
 		}
 
+		printf("done with begin/end\n");
+
 		// get token and move on
 		getToken();
 
@@ -578,15 +583,18 @@ int statement(){
 		if( !condition() ) return 0;	                      // error
 
 		// test for the third pattern piece "thensym"
-		if( currentToken != thensym ) return error(16);	    // no then error
+		if (currentToken != thensym)
+            error(16);
 
-		// get token and test the statement
-		getToken();
+        getToken();
+
+
 
 		jumpIndex1 = codeLine;
 		gen(JPC, 0, 0);
-
 		if( !statement() ) return error(7);	                      // error statement expected
+
+        printf("if/else currentToken %d\n", currentToken);
 
 		// get to adding something for an else
 		if( currentToken == elsesym){
@@ -596,11 +604,13 @@ int statement(){
             code[jumpIndex1].m = codeLine+1;
             jumpIndex1 = codeLine;
             gen(JMP,0,0);
+
             if(!statement()) return error(7);                      //error statement expected
+
 		}
 
-
         code[jumpIndex1].m = codeLine;
+
 
 	// test for first pattern piece "whilesym"
 	}else if( currentToken == whilesym){
@@ -828,7 +838,7 @@ int factor(){
 		if( currentToken >= 100000 ) return error(25);      // num too large error
 
         //LIT
-	    gen(LIT, currLevel, currentToken);
+	    gen(LIT, 0, currentToken);
 
 	// test for first pattern piece "lparentsym"
 	}else if( currentToken == lparentsym ){
