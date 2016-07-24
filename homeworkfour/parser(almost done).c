@@ -124,7 +124,7 @@ void gen( int op, int lex, int mcode ){
         exit(EXIT_FAILURE);
     }
 
-    printf("op: %d, lex: %d, m: %d\n", op, lex, mcode);
+    //printf("op: %d, lex: %d, m: %d\n", op, lex, mcode);
     // make the instruction with its code and add to code array
 	ins instruction = { op, lex, mcode };
 	code[codeLine++] = instruction;
@@ -197,7 +197,7 @@ int expression(), term(), factor();
 void getToken(){
 	fscanf( fp, "%s ", buffer );
 	currentToken = atoi(buffer);
-	printf( "(%s,%i)\n", buffer,currentToken );
+	//printf( "(%s,%i)\n", buffer,currentToken );
 }
 
 /* checks program syntax:
@@ -401,7 +401,7 @@ int procdec(){
 	s.kind = PROC;
 	s.val = s.level = s.addr = 0;
 
-	printf("PROCEDURE!! YUUSSS\n\n");
+	//printf("PROCEDURE!! YUUSSS\n\n");
 
 
 
@@ -569,7 +569,6 @@ int statement(){
             return error(17);       // no end error
 		}
 
-		printf("done with begin/end\n");
 
 		// get token and move on
 		getToken();
