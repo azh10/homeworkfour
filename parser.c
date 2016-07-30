@@ -120,6 +120,7 @@ FILE *fp;
 
 void updateStackSize( ins instr ){
 		
+	printf( "%i", instr.op );
 	switch( instr.op ){
 	case LIT: case LOD: case SIO+1: 
 		codeLine++; break;
@@ -132,17 +133,25 @@ void updateStackSize( ins instr ){
 		// m is not neg or odd
 		else if( instr.m != 1 && instr.m != 6 ) codeLine--;
 	}
+	printf( "\t%i\n", codeLine );
 }
 
+void printM(){
+	int i = 0;
+	printf( "\tcode: %i\n", codeLine );
+	for( ; i < codeLine; i++ )
+		printf( "%i. %i %i %i\n", i, code[i].op, code[i].l, code[i].m );
+	printf("\n");
+}
 void gen( int op, int lex, int mcode ){
 
 	if (codeLine > MAX_CODE_LENGTH){
 
 		printf("Error! Can't have more than 500 instructions.");
 			exit(EXIT_FAILURE);
-		}
+	}
 		
-		// make the instruction with its code and add to code array
+	// make the instruction with its code and add to code array
 	ins instruction = { op, lex, mcode };
 	code[codeLine++] = instruction;
 //	updateStackSize( instruction );
