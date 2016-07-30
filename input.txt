@@ -1,0 +1,10 @@
+var x,y; 
+procedure sum(a,b); 
+	begin 
+		return := a+b; 
+	end; 
+begin 
+	x := 5; 
+	y := call sum(x,2*x); 
+	write y; 
+end.
