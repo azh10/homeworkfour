@@ -77,7 +77,7 @@ char table[34][12] = {
 };
 
 // the printable error messages stored in an array
-char ERROR_MESSAGE[26][60] = {
+char ERROR_MESSAGE[30][60] = {
 	"end expected.\n",
 	"Use of = instead of :=.\n",
 	"= must be followed by a number.\n",
